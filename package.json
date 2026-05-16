@@ -1,0 +1,20 @@
+{
+  "name": "brief-generator",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "db:schema": "psql \"$DATABASE_URL\" -f server/sql/schema.sql",
+    "dev": "node server/app.js",
+    "start": "node server/app.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "pg": "^8.13.3",
+    "playwright-core": "^1.59.1"
+  },
+  "devDependencies": {
+    "supertest": "^7.0.0"
+  }
+}
