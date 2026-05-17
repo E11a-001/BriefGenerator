@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MoClaw Brief Generator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&family=Source+Serif+4:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha384-Yv5O+t3uE3hunW8uyrbpPW3iw6/5/Y7HitWJBLgqfMoA36NogMmy+8wWZMpn3HWc" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js" integrity="sha384-PlRSzpewlarQuj5alIadXwjNUX+2eNMKwr0f07ShWYLy8B6TjEbm7ZlcN/ScSbwy" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/docx@8.5.0/build/index.umd.js" integrity="sha384-4xaIisuLEy2lo2HkB2C4rEf7v8jbTb2kuogX6TkuEt9feTWKBSFSOzsqNNbV+sKh" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+  <nav class="topnav">
+    <div class="topnav-left">
+      <svg class="brand-logo" width="28" height="28" viewBox="0 0 48 48" fill="none">
+        <rect width="48" height="48" rx="10" fill="#E8692D"/>
+        <path d="M14 34c0-4 2-8 6-10-4-2-6-6-6-10 0-2 2-4 4-4s4 2 6 4c2-2 4-4 6-4s4 2 4 4c0 4-2 8-6 10 4 2 6 6 6 10 0 2-2 4-4 4s-4-2-6-4c-2 2-4 4-6 4s-4-2-4-4z" fill="white" opacity="0.9"/>
+      </svg>
+      <span class="brand-name">MoClaw Brief Generator</span>
+    </div>
+    <div class="topnav-right">
+      <button class="nav-btn active" id="btn-tab-board" onclick="switchTab('board')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        KOC Board
+      </button>
+      <button class="nav-btn" id="btn-tab-usecases" onclick="switchTab('usecases')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        Use Cases
+      </button>
+      <button class="nav-btn" id="btn-tab-presets" onclick="switchTab('presets')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l7 4v10l-7 4-7-4V7z"/><path d="M12 12v9"/><path d="M19 7l-7 5-7-5"/></svg>
+        Presets
+      </button>
+      <button class="nav-btn" id="btn-tab-template" onclick="switchTab('template')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+        Template
+      </button>
+    </div>
+  </nav>
+
+  <div id="tab-board" class="tab-content active">
+    <div class="board-layout">
+      <div class="board-header">
+        <h2 class="page-title">KOC Board</h2>
+        <button class="btn-primary" onclick="openNewKocModal()">+ New KOC</button>
+      </div>
+      <div class="filter-pills" id="filter-pills">
+        <button class="pill active" data-filter="all" onclick="filterBoard('all')">All</button>
+        <button class="pill" data-filter="draft" onclick="filterBoard('draft')">Draft</button>
+        <button class="pill" data-filter="brief_sent" onclick="filterBoard('brief_sent')">Brief Sent</button>
+        <button class="pill" data-filter="script_received" onclick="filterBoard('script_received')">Script Received</button>
+        <button class="pill" data-filter="video_received" onclick="filterBoard('video_received')">Video Received</button>
+        <button class="pill" data-filter="published" onclick="filterBoard('published')">Published</button>
+      </div>
+      <div id="koc-grid" class="koc-grid"></div>
+      <div id="board-empty" class="empty-state" style="display:none;">
+        <p>No KOCs yet. Click <strong>+ New KOC</strong> to add your first creator.</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-usecases" class="tab-content">
+    <div class="usecases-layout">
+      <div class="panel">
+        <div class="usecases-header">
+          <div>
+            <h2 class="panel-title">Use Case Library</h2>
+            <p class="section-hint">Manage your reusable use cases. These can be assigned to any KOC.</p>
+          </div>
+        </div>
+        <div id="uc-library" class="uc-library"></div>
+        <div class="uc-add-form" id="uc-edit-form">
+          <h3 class="section-title" id="uc-form-heading" style="margin-bottom:12px;">Add New Use Case</h3>
+          <div class="form-group">
+            <div class="field-label-row">
+              <label>Source URL (optional)</label>
+              <button type="button" class="btn-secondary btn-inline-action" onclick="pasteIntoField('uc-source-url')">Paste</button>
+            </div>
+            <div class="inline-action-row">
+              <input type="url" id="uc-source-url" placeholder="https://..." />
+              <button type="button" class="btn-secondary" id="uc-generate-btn" onclick="generateUseCaseDraft()">Generate with AI</button>
+            </div>
+            <p class="section-hint" style="margin:8px 0 0;">You can generate from a source URL, a prompt, an output sample, or any combination of these inputs. If you already filled fields below, AI will use them as guidance and may refine the wording.</p>
+          </div>
+          <div class="form-group">
+            <div class="field-label-row">
+              <label>Example Prompt (optional)</label>
+              <button type="button" class="btn-secondary btn-inline-action" onclick="pasteIntoField('uc-source-prompt')">Paste</button>
+            </div>
+            <textarea id="uc-source-prompt" rows="3" placeholder="Paste the prompt or request you used in the product."></textarea>
+          </div>
+          <div class="form-group">
+            <div class="field-label-row">
+              <label>Example Output (optional)</label>
+              <button type="button" class="btn-secondary btn-inline-action" onclick="pasteIntoField('uc-source-output')">Paste</button>
+            </div>
+            <textarea id="uc-source-output" rows="4" placeholder="Paste the result text the product returned."></textarea>
+          </div>
+          <div class="form-group">
+            <div class="field-label-row">
+              <label>Screenshot / Demo Note (optional)</label>
+              <button type="button" class="btn-secondary btn-inline-action" onclick="pasteIntoField('uc-source-screenshot-note')">Paste</button>
+            </div>
+            <textarea id="uc-source-screenshot-note" rows="2" placeholder="Describe what a screenshot or delivery view shows if you want AI to use it as evidence."></textarea>
+          </div>
+          <div class="form-group">
+            <label>AI Context Keywords (optional)</label>
+            <p class="section-hint" style="margin:0 0 8px;">Use short comma-separated hints to steer the draft without writing the final brief copy yourself.</p>
+            <div class="two-col-grid">
+              <div>
+                <label class="field-sub-label">Audience Keywords</label>
+                <input type="text" id="uc-ai-audience-keywords" placeholder="e.g. founders, operators, researchers" />
+              </div>
+              <div>
+                <label class="field-sub-label">Problem Keywords</label>
+                <input type="text" id="uc-ai-problem-keywords" placeholder="e.g. information overload, repetitive checking" />
+              </div>
+              <div>
+                <label class="field-sub-label">Must Highlight</label>
+                <input type="text" id="uc-ai-must-highlight" placeholder="e.g. scheduled delivery, Telegram push" />
+              </div>
+              <div>
+                <label class="field-sub-label">Must Avoid</label>
+                <input type="text" id="uc-ai-must-avoid" placeholder="e.g. code-level details, unsupported claims" />
+              </div>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Title</label>
+            <input type="text" id="uc-new-title" placeholder="e.g. From rough ideas to real outputs" />
+          </div>
+          <div class="form-group">
+            <label>Description</label>
+            <textarea id="uc-new-desc" rows="3" placeholder="Describe this use case..."></textarea>
+          </div>
+          <div class="form-group">
+            <label>Who This Is For</label>
+            <textarea id="uc-new-who" rows="2" placeholder="Describe the best-fit user situation..."></textarea>
+          </div>
+          <div class="form-group">
+            <label>Problem</label>
+            <textarea id="uc-new-problem" rows="2" placeholder="What pain point or friction does this solve?"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Opening Hook</label>
+            <textarea id="uc-new-hook" rows="2" placeholder="What should the creator say in the first few seconds to pull the right audience in?"></textarea>
+          </div>
+          <div class="form-group">
+            <label>How To Show It</label>
+            <textarea id="uc-new-how" rows="2" placeholder="What should the creator demonstrate on screen?"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Expected Outcome</label>
+            <textarea id="uc-new-outcome" rows="2" placeholder="What should the audience understand after watching?"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Suggested Elements</label>
+            <div id="uc-new-suggested-elements" class="uc-new-links"></div>
+            <button class="btn-add-link" onclick="addNewUcSuggestedElement()">+ Add suggested element</button>
+          </div>
+          <div class="form-group">
+            <label>Additional Reference Links</label>
+            <div id="uc-new-links" class="uc-new-links"></div>
+            <button class="btn-add-link" onclick="addNewUcLink()">+ Add link</button>
+          </div>
+          <button class="btn-primary" id="uc-save-btn" onclick="saveNewUseCase()" style="margin-top:8px;">Save Use Case</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-presets" class="tab-content">
+    <div class="usecases-layout">
+      <div class="panel">
+        <div class="usecases-header">
+          <div>
+            <h2 class="panel-title">Campaign Presets</h2>
+            <p class="section-hint">Create reusable campaign-level hook and cover guidance that can be applied per brief.</p>
+          </div>
+        </div>
+        <div id="preset-library" class="preset-library"></div>
+        <div class="uc-add-form">
+          <h3 class="section-title" style="margin-bottom:12px;">Add New Campaign Preset</h3>
+          <div class="form-group">
+            <label>Preset Name</label>
+            <input type="text" id="preset-new-name" placeholder="e.g. Q2 DeepSeek Wave" />
+          </div>
+          <div class="form-group">
+            <label>Trending Hook Topics</label>
+            <input type="text" id="preset-new-topics" placeholder="e.g. DeepSeek, Grok 3" />
+          </div>
+          <div class="form-group">
+            <label>Trending Hook Angle</label>
+            <textarea id="preset-new-angle" rows="3" placeholder="How should the creator frame the opening hook?"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Cover Poster Image</label>
+            <input type="text" id="preset-new-poster-url" placeholder="https://... or /campaign-posters/..." />
+          </div>
+          <div class="form-group">
+            <label>Cover Poster Note</label>
+            <textarea id="preset-new-poster-note" rows="2" placeholder="Add any thumbnail or cover note"></textarea>
+          </div>
+          <button class="btn-primary" onclick="saveCampaignPreset()" style="margin-top:8px;">Save Preset</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-template" class="tab-content">
+    <div class="template-layout">
+      <div class="panel">
+        <div class="template-header">
+          <h2 class="panel-title">Brief Template</h2>
+          <div class="template-actions">
+            <button class="btn-secondary" onclick="resetTemplate()">Reset to Default</button>
+            <button class="btn-primary" onclick="saveTemplate()">Save Template</button>
+          </div>
+        </div>
+        <p class="template-hint">
+          Edit the template below. Use <code>{{variable_name}}</code> for dynamic fields.
+          Available: <span id="variable-tags"></span>
+        </p>
+        <div class="template-editor-wrap">
+          <textarea id="template-editor" class="template-editor" spellcheck="false"></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-brief" class="tab-content">
+    <div class="brief-editor-layout">
+      <div class="brief-editor-topbar">
+        <button class="btn-back" onclick="closeBriefEditor()">← Back to KOC</button>
+        <h2 class="panel-title" id="brief-editor-title">Edit Brief</h2>
+        <div class="export-buttons">
+          <span id="brief-save-status" class="save-status is-saved">Saved</span>
+          <button class="btn-secondary" id="brief-save-btn" onclick="saveBrief()">Save Brief</button>
+          <button class="btn-export btn-pdf" onclick="exportPDF()">Export PDF</button>
+          <button class="btn-export btn-word" onclick="exportWord()">Export Word</button>
+        </div>
+      </div>
+      <div class="editor-layout">
+        <div class="panel form-panel">
+          <h3 class="section-title">Use Cases</h3>
+          <div id="brief-usecase-selector" class="brief-usecase-selector"></div>
+
+          <h3 class="section-title">Campaign Strategy</h3>
+          <div class="form-group">
+            <label>Campaign Preset</label>
+            <select id="var-campaign_preset_id" onchange="applyCampaignPresetSelection(this.value)">
+              <option value="">No preset</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Content Type</label>
+            <select id="var-content_type">
+              <option value="">Select content type</option>
+              <option value="quick_demo_video">Quick Demo Video</option>
+              <option value="deep_review_video">Deep Review Video</option>
+              <option value="pain_point_story_video">Pain Point Story Video</option>
+              <option value="tutorial_how_to_video">Tutorial / How-to Video</option>
+            </select>
+          </div>
+          <div class="strategy-grid">
+            <div class="strategy-card">
+              <div class="strategy-label">Derived Campaign Goal</div>
+              <div class="strategy-value" id="derived-campaign-goal">To be assigned</div>
+            </div>
+            <div class="strategy-card">
+              <div class="strategy-label">Funnel Stage</div>
+              <div class="strategy-value" id="derived-funnel-stage">To be assigned</div>
+            </div>
+            <div class="strategy-card">
+              <div class="strategy-label">Suggested CTA Guidance</div>
+              <div class="strategy-value" id="derived-cta-copy">To be assigned</div>
+            </div>
+            <div class="strategy-card">
+              <div class="strategy-label">Payment Terms Preview</div>
+              <div class="strategy-value" id="derived-payment-terms">To be assigned</div>
+            </div>
+          </div>
+          <div class="form-group" style="margin-top:16px;">
+            <label>Campaign Goal</label>
+            <textarea id="var-campaign_goal" rows="3" placeholder="Optional custom campaign goal. Leave blank to use the suggested default."></textarea>
+          </div>
+          <div class="form-group">
+            <label>Primary KPI</label>
+            <input type="text" id="var-primary_kpi" placeholder="Optional. Leave blank to omit from the brief." />
+          </div>
+          <div class="form-group">
+            <label>CTA Guidance</label>
+            <textarea id="var-cta" rows="3" placeholder="Optional. Leave blank to omit from the brief."></textarea>
+          </div>
+          <div class="form-group">
+            <label>Trending Hook Topics</label>
+            <input type="text" id="var-trending_hook_topics" placeholder="e.g. DeepSeek, Grok 3" />
+          </div>
+          <div class="form-group">
+            <label>Trending Hook Angle</label>
+            <textarea id="var-trending_hook_angle" rows="3" placeholder="Add opening guidance for the creator"></textarea>
+          </div>
+
+          <h3 class="section-title" style="margin-top:20px;">Campaign Audience</h3>
+          <div class="form-group">
+            <label>Campaign Audience</label>
+            <textarea id="var-primary_audience" rows="3" placeholder="Describe who this campaign is for..."></textarea>
+            <div id="primary-audience-suggestion" class="section-hint" style="display:none;margin-top:8px;"></div>
+            <button type="button" class="btn-secondary" id="primary-audience-apply-btn" style="display:none;margin-top:10px;" onclick="applyPrimaryAudienceSuggestion()">Apply Suggested Audience</button>
+          </div>
+
+          <h3 class="section-title">Compensation & Timeline</h3>
+          <div class="form-row">
+            <div class="form-group half">
+              <label>Total Compensation</label>
+              <input type="text" id="var-compensation" placeholder="e.g. $500" />
+            </div>
+            <div class="form-group half">
+              <label>Currency</label>
+              <select id="var-currency">
+                <option value="USD">USD</option>
+                <option value="EUR">EUR</option>
+                <option value="CNY">CNY</option>
+                <option value="GBP">GBP</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group half">
+              <label>Payment Method</label>
+              <select id="var-payment_method">
+                <option value="">Select</option>
+                <option value="PayPal">PayPal</option>
+                <option value="Bank Transfer">Bank Transfer</option>
+                <option value="Wise">Wise</option>
+                <option value="Payoneer">Payoneer</option>
+                <option value="USDT">USDT</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div class="form-group half">
+              <label>Payment Schedule</label>
+              <select id="var-payment_schedule_type">
+                <option value="">Select</option>
+                <option value="split_20_script_80_live">20 / 80 split (draft / live)</option>
+                <option value="split_30_script_70_live">30 / 70 split (draft / live)</option>
+                <option value="split_50_script_50_live">50 / 50 split (draft / live)</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Payment Terms</label>
+            <textarea id="var-payment_terms" rows="2" placeholder="Auto-filled from the selected payment schedule."></textarea>
+          </div>
+          <div class="form-row">
+            <div class="form-group half">
+              <label>Script Deadline</label>
+              <input id="var-script_deadline" type="text" placeholder="Within 1 day of posting the task" />
+            </div>
+            <div class="form-group half">
+              <label>Draft Deadline</label>
+              <input id="var-draft_deadline" type="text" placeholder="Within 3 days of posting the task" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group half">
+              <label>Go-Live Deadline</label>
+              <input id="var-publish_deadline" type="text" placeholder="Post within 1 day after confirming the content." />
+            </div>
+            <div class="form-group half">
+              <label>Content Language</label>
+              <select id="var-language">
+                <option value="">Select</option>
+                <option value="English">English</option>
+                <option value="Mandarin">Mandarin</option>
+                <option value="Cantonese">Cantonese</option>
+                <option value="Spanish">Spanish</option>
+                <option value="Portuguese">Portuguese</option>
+                <option value="French">French</option>
+                <option value="German">German</option>
+                <option value="Japanese">Japanese</option>
+                <option value="Korean">Korean</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group half">
+              <label>Video Duration</label>
+              <select id="var-video_duration">
+                <option value="">Select</option>
+                <option value="30-60 sec">30-60 sec</option>
+                <option value="1-2 min">1-2 min</option>
+                <option value="3-5 min">3-5 min</option>
+                <option value="6-8 min">6-8 min</option>
+                <option value="8-12 min">8-12 min</option>
+                <option value="10-15 min">10-15 min</option>
+              </select>
+            </div>
+            <div class="form-group half">
+              <label>Minimum Posting Period</label>
+              <select id="var-posting_retention_period">
+                <option value="">Select</option>
+                <option value="30 days">30 days</option>
+                <option value="45 days">45 days</option>
+                <option value="60 days">60 days</option>
+                <option value="90 days">90 days</option>
+                <option value="180 days">180 days</option>
+                <option value="No minimum retention requirement">No minimum retention requirement</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Video Style / Format</label>
+            <select id="var-video_format">
+              <option value="">Select</option>
+              <option value="Horizontal">Horizontal</option>
+              <option value="Vertical 9:16">Vertical 9:16</option>
+              <option value="Screen recording">Screen recording</option>
+              <option value="Talking head">Talking head</option>
+              <option value="Talking head + screen recording">Talking head + screen recording</option>
+              <option value="Screen recording + voice-over">Screen recording + voice-over</option>
+              <option value="Subtitled demo">Subtitled demo</option>
+            </select>
+            <div id="history-video_format" class="history-suggestions"></div>
+          </div>
+          <div class="form-group">
+            <label>Post-Publish Edit Rule</label>
+            <select id="var-post_publish_edit_rule">
+              <option value="">Select</option>
+              <option value="No deletion, unlisting, or material edits without prior written approval during the retention period">No deletion, unlisting, or material edits without prior written approval during the retention period</option>
+              <option value="Title, thumbnail, and description updates allowed, but no deletion or unlisting during the retention period">Title, thumbnail, and description updates allowed, but no deletion or unlisting during the retention period</option>
+              <option value="Any post-publish change requires prior written approval during the retention period">Any post-publish change requires prior written approval during the retention period</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <div class="form-group half">
+              <label>Category Exclusivity Window</label>
+              <select id="var-category_exclusivity_window">
+                <option value="">Select</option>
+                <option value="No category exclusivity">No category exclusivity</option>
+                <option value="7 days before and 7 days after">7 days before and 7 days after</option>
+                <option value="14 days before and 14 days after">14 days before and 14 days after</option>
+                <option value="30 days before and 30 days after">30 days before and 30 days after</option>
+              </select>
+            </div>
+            <div class="form-group half">
+              <label>Other Sponsor Mention Rule</label>
+              <select id="var-other_sponsor_mention_rule">
+                <option value="">Select</option>
+                <option value="No competing sponsor mention in the same content">No competing sponsor mention in the same content</option>
+                <option value="Other sponsor mentions allowed if not competing">Other sponsor mentions allowed if not competing</option>
+              <option value="Case-by-case approval required">Case-by-case approval required</option>
+            </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Cover Poster Image</label>
+            <input type="text" id="var-cover_poster_url" placeholder="https://... or /campaign-posters/..." />
+          </div>
+          <div class="form-group">
+            <label>Cover Poster Note</label>
+            <textarea id="var-cover_poster_note" rows="2" placeholder="Add any thumbnail or cover guidance"></textarea>
+          </div>
+
+          <h3 class="section-title" style="margin-top:20px;">Review Process</h3>
+          <div class="form-group">
+            <label>Script Approval</label>
+            <div class="fixed-rule-note">Script must be reviewed and approved before filming.</div>
+          </div>
+          <div class="form-group">
+            <div class="form-row">
+              <div class="form-group half">
+                <label>Script Revision Rounds</label>
+                <select id="var-script_revision_rounds">
+                  <option value="">Select</option>
+                  <option value="1 round">1 round</option>
+                  <option value="2 rounds">2 rounds</option>
+                  <option value="3 rounds">3 rounds</option>
+                </select>
+              </div>
+              <div class="form-group half">
+                <label>Video Revision Rounds</label>
+                <select id="var-video_revision_rounds">
+                  <option value="">Select</option>
+                  <option value="1 round">1 round</option>
+                  <option value="2 rounds">2 rounds</option>
+                  <option value="3 rounds">3 rounds</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <h3 class="section-title" style="margin-top:20px;">Links & Tracking</h3>
+          <div class="form-group">
+            <label>Tracking Link</label>
+            <input type="url" id="var-tracking_link" placeholder="https://moclaw.ai/?ref=..." />
+            <div id="history-tracking_link" class="history-suggestions"></div>
+          </div>
+          <div class="form-group">
+            <label>Promo Code (optional)</label>
+            <input type="text" id="var-promo_code" placeholder="e.g. CREATOR20" />
+          </div>
+
+          <h3 class="section-title" style="margin-top:20px;">Additional</h3>
+          <div class="form-group">
+            <label>Content License / Usage Rights</label>
+            <select id="var-license">
+              <option value="">Select</option>
+              <option value="Organic repost on the brand's owned social channels with creator credit only.">Organic repost on the brand's owned social channels with creator credit only</option>
+              <option value="Organic repost plus website and landing page usage for the agreed license term.">Organic repost plus website and landing page usage</option>
+              <option value="Organic repost, website usage, and email / newsletter usage for the agreed license term.">Organic repost + website + email / newsletter usage</option>
+              <option value="Paid usage / boosting rights across the brand's owned channels for the agreed license term.">Paid usage / boosting rights</option>
+              <option value="Whitelisting / creator handle usage for paid amplification during the agreed license term.">Whitelisting / creator handle usage</option>
+              <option value="Internal and sales enablement usage only, not for paid media.">Internal / sales material usage only</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <div class="form-group half">
+              <label>License Duration</label>
+              <select id="var-license_duration">
+                <option value="">Select</option>
+                <option value="30 days">30 days</option>
+                <option value="60 days">60 days</option>
+                <option value="90 days">90 days</option>
+                <option value="6 months">6 months</option>
+                <option value="12 months">12 months</option>
+                <option value="Perpetual">Perpetual</option>
+              </select>
+            </div>
+            <div class="form-group half">
+              <label>License Region</label>
+              <select id="var-license_region">
+                <option value="">Select</option>
+                <option value="Global">Global</option>
+                <option value="US">US</option>
+                <option value="UK">UK</option>
+                <option value="EU">EU</option>
+                <option value="APAC">APAC</option>
+                <option value="Middle East">Middle East</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Special Notes</label>
+            <textarea id="var-notes" rows="3" placeholder="Any specific instructions..."></textarea>
+            <div id="history-notes" class="history-suggestions"></div>
+          </div>
+        </div>
+        <div class="panel preview-panel">
+          <div class="preview-scroll">
+            <div id="brief-preview" class="brief-preview"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-document" class="tab-content">
+    <div class="brief-editor-layout">
+      <div class="brief-editor-topbar">
+        <button class="btn-back" onclick="closeDocumentEditor()">← Back to KOC</button>
+        <h2 class="panel-title" id="document-editor-title">Edit Document</h2>
+        <div class="export-buttons">
+          <span id="document-save-status" class="save-status is-saved">Saved</span>
+          <button class="btn-secondary" id="document-save-btn" onclick="saveDocument()">Save Document</button>
+          <button class="btn-export btn-pdf" onclick="exportDocumentPDF()">Export PDF</button>
+        </div>
+      </div>
+      <div class="editor-layout">
+        <div class="panel form-panel">
+          <div id="document-form"></div>
+        </div>
+        <div class="panel preview-panel">
+          <div class="preview-scroll">
+            <div id="document-preview" class="brief-preview"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="koc-modal-overlay" class="modal-overlay" onclick="closeKocModal(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+      <button class="modal-close" onclick="closeKocModal()">×</button>
+      <div class="modal-body" id="koc-modal-body"></div>
+    </div>
+  </div>
+
+  <div id="new-koc-overlay" class="modal-overlay" onclick="closeNewKocModal(event)">
+    <div class="modal modal-sm" onclick="event.stopPropagation()">
+      <button class="modal-close" onclick="closeNewKocModal()">×</button>
+      <h2 class="modal-title">New KOC</h2>
+      <div class="form-group">
+        <label>Creator Name / Handle</label>
+        <input type="text" id="new-koc-name" placeholder="e.g. @techreviewer" />
+      </div>
+      <div class="form-group">
+        <label>Platform</label>
+        <select id="new-koc-platform">
+          <option value="YouTube">YouTube</option>
+          <option value="TikTok">TikTok</option>
+          <option value="Instagram">Instagram</option>
+          <option value="Twitter / X">Twitter / X</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="new-koc-email" placeholder="creator@example.com" />
+      </div>
+      <div class="form-group">
+        <label>Channel / Profile URL</label>
+        <input type="url" id="new-koc-channel" placeholder="https://youtube.com/@..." />
+      </div>
+      <button class="btn-primary" onclick="createKoc()" style="width:100%;margin-top:8px;">Create KOC</button>
+    </div>
+  </div>
+
+  <script src="/shared-config.js"></script>
+  <script src="/primary-audience.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>
